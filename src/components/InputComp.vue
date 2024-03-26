@@ -1,16 +1,29 @@
 <template>
-    <input :type="type" :placeholder="placeHolder" class="p-1 border-2 focus:outline-none focus:border-blue-600"
-        :class="width"/>
+    <input :type="type" :placeholder="placeHolder" class="p-1 focus:outline-none focus:border-blue-600"
+        :class="customClass" v-model="model"/>
 </template>
 <script setup>
 import { ref } from 'vue';
-const pops = defineProps({
+const props = defineProps({
     type: String,
     placeHolder: String,
-    width: String
+    width: String,
+    underline: Boolean
 })
 
-const width = ref("w-" + pops.width)
+const model = defineModel()
+
+const customClass = ref("")
+
+if (props.underline) {
+    customClass.value = customClass.value.concat(" border-b-2")
+} else {
+    customClass.value = customClass.value.concat(" border-2")
+}
+
+if (props.width != undefined || props.width != "") {
+    customClass.value = customClass.value.concat(" w-").concat(props.width)
+}
 
 </script>
 <style lang="">
