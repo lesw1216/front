@@ -10,11 +10,11 @@ const props = defineProps({
     width: String
 })
 
-const width = ref("w-" + props.width)
-
 const customClass = ref("")
 
-customClass.value = customClass.value.concat(width.value)
+if (props.width != undefined && props.width != "") {
+    customClass.value = customClass.value.concat(" w-").concat(props.width)
+}
 </script>
 <style lang="">
     
