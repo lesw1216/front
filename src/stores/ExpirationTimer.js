@@ -23,7 +23,7 @@ export const useExpiationTimerStore = defineStore('expirationTimer', {
             this.minute = this.convertMinute
             this.second = this.convertSecond
 
-            if (this.realTime < 0) {
+            if (this.realTime <= 0) {
                 return
             }
 

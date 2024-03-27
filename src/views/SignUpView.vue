@@ -27,7 +27,7 @@
                 </div>
             </header>
                 <div>
-                    <ErrorMessageComp message="올바른 이메일 형식을 입력해주세요." :is-error=errorStore.isError></ErrorMessageComp>
+                    <ErrorMessageComp :message="errorStore.errorMsg" :is-error=errorStore.isError></ErrorMessageComp>
                     <form @submit.prevent="onClickNext">
                         <InputComp v-if="stepper.inputEmail"
                             v-model="userInfo.email" 
@@ -37,26 +37,31 @@
                             :class="{'border-red-500': errorStore.isError}"
                         ></InputComp>
                         <InputComp v-else-if="stepper.emailAuth" 
-                            type="email" 
+                            v-model="userInfo.otp"
+                            type="text" 
                             place-holder="인증 번호를 입력하세요." 
                             underline width="full"
+                            :class="{'border-red-500': errorStore.isError}"
                         ></InputComp>
                         <InputComp v-else-if="stepper.inputPassword" 
-                            type="email" 
-                            place-holder="6자리 이상의 문자를 입력하세요." 
-                            underline width="full"></InputComp>
-                        <InputComp v-else-if="stepper.passwordRecomfirm" 
-                            type="email" 
+                            type="password" 
                             place-holder="6자리 이상의 문자를 입력하세요." 
                             underline width="full"
+                            :class="{'border-red-500': errorStore.isError}"
+                        ></InputComp>
+                        <InputComp v-else-if="stepper.passwordRecomfirm" 
+                            type="password" 
+                            place-holder="6자리 이상의 문자를 입력하세요." 
+                            underline width="full"
+                            :class="{'border-red-500': errorStore.isError}"
                         ></InputComp>
                     </form>
                     <div class="text-xs flex justify-between mt-2" v-show="stepper.emailAuth">
-                        <button class="border-b" @click="sendEmail(true)">
+                        <button class="border-b" @click="sendEmail">
                             인증 번호 재전송
                         </button> 
                         <div>
-                            인증번호: {{ expriationTimerStore.minute }}분 {{ expriationTimerStore.second }}초
+                            남은 시간: {{ expriationTimerStore.minute }}분 {{ expriationTimerStore.second }}초
                         </div>
                     </div>
                 </div>
@@ -102,15 +107,9 @@ const stepper = reactive({
 const userInfo = reactive({
     email: undefined,
     password: undefined,
-    passwordRecomfirm: undefined
+    passwordRecomfirm: undefined,
+    otp: undefined
 })
-
-const expirationTimer = reactive({
-    time: 0,
-    minute: 5,
-    second: 0,
-})
-
 
 // onCLick
 
@@ -136,8 +135,9 @@ const onClickNext = () => {
         sendEmail()
     } else if (stepper.emailAuth) {
         // 이메일 인증 후 비밀 번호 입력 화면으로 넘어가기
-        stepper.emailAuth = false
-        stepper.inputPassword = true
+
+        reqCertifyOtp()
+        
     } else if (stepper.inputPassword) {
         // 비밀 번호 재입력 화면으로 넘어가기
         stepper.inputPassword = false
@@ -157,14 +157,12 @@ const onClickNext = () => {
 // REST API
 
 // 이메일 서버로 전송
-const sendEmail = (retart) => {
-    console.log(retart)
+const sendEmail = () => {
     errorStore.$reset()
 
     axios.post('/api/v1/auth/locals/email', {
         email: userInfo.email
     }).then(function (response) {
-        console.log(response)
         // 페이지 이동
         stepper.inputEmail = false
         stepper.emailAuth = true
@@ -191,6 +189,29 @@ const reqExpirationTime = () => {
         expriationTimerStore.reduceExpiration()
     }).catch(function (error) {
         console.log(error)
+    })
+}
+
+// 인증 번호 인증
+const reqCertifyOtp = () => {
+    errorStore.$reset()
+    axios.post("/api/v1/auth/locals/email/otp", {
+        email: userInfo.email,
+        otp: userInfo.otp
+    }).then(function(response) {
+        stepper.emailAuth = false
+        stepper.inputPassword = true
+    }).catch(function(error) {
+        const errorCodes = error.response.data.errorCodes
+        if (errorCodes.includes(70) || errorCodes.includes(1) || errorCodes.includes(2)) {
+            errorStore.createError("인증 번호가 일치하지 않습니다.")
+            return
+        } 
+        
+        if (errorCodes.includes(71)) {
+            errorStore.createError("인증 번호가 만료되었습니다.")
+            return
+        }
     })
 }
 </script>
